@@ -18,6 +18,7 @@ import (
 
 	"cdr.dev/slog"
 
+	"github.com/coder/coder/v2/aibridged"
 	"github.com/coder/coder/v2/aibridged/proto"
 	"github.com/coder/coder/v2/coderd/database"
 	"github.com/coder/coder/v2/coderd/database/dbauthz"
@@ -47,11 +48,7 @@ var (
 	ErrNoExternalAuthLinkFound = xerrors.New("no external auth link found")
 )
 
-var (
-	_ proto.DRPCAuthorizerServer      = &Server{}
-	_ proto.DRPCMCPConfiguratorServer = &Server{}
-	_ proto.DRPCRecorderServer        = &Server{}
-)
+var _ aibridged.DRPCServer = &Server{}
 
 type store interface {
 	// Recorder-related queries.
