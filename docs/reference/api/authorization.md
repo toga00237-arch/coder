@@ -1,5 +1,35 @@
 # Authorization
 
+## List API key scopes
+
+### Code samples
+
+```shell
+# Example request using curl
+curl -X GET http://coder-server:8080/api/v2/auth/scopes \
+  -H 'Accept: application/json'
+```
+
+`GET /auth/scopes`
+
+### Example responses
+
+> 200 Response
+
+```json
+[
+  "string"
+]
+```
+
+### Responses
+
+| Status | Meaning                                                 | Description | Schema          |
+|--------|---------------------------------------------------------|-------------|-----------------|
+| 200    | [OK](https://tools.ietf.org/html/rfc7231#section-6.3.1) | OK          | array of string |
+
+<h3 id="list-api-key-scopes-responseschema">Response Schema</h3>
+
 ## Check authorization
 
 ### Code samples
