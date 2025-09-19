@@ -2005,7 +2005,7 @@ func (api *API) CreateInMemoryAIBridgeServer(dialCtx context.Context) (client ai
 
 	mux := drpcmux.New()
 	srv, err := aibridgedserver.NewServer(api.ctx, api.Database, api.Logger.Named("aibridgedserver"),
-		api.DeploymentValues.AccessURL.String(), api.ExternalAuthConfigs, api.Experiments)
+		api.AccessURL.String(), api.ExternalAuthConfigs, api.Experiments)
 	if err != nil {
 		return nil, err
 	}
