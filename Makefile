@@ -636,8 +636,8 @@ TAILNETTEST_MOCKS := \
 	tailnet/tailnettest/subscriptionmock.go
 
 AIBRIDGED_MOCKS := \
-	aibridged/aibridgedmock/clientmock.go \
-	aibridged/aibridgedmock/poolmock.go
+	x/aibridged/aibridgedmock/clientmock.go \
+	x/aibridged/aibridgedmock/poolmock.go
 
 GEN_FILES := \
 	tailnet/proto/tailnet.pb.go \
@@ -766,8 +766,8 @@ codersdk/workspacesdk/agentconnmock/agentconnmock.go: codersdk/workspacesdk/agen
 	go generate ./codersdk/workspacesdk/agentconnmock/
 	touch "$@"
 
-$(AIBRIDGED_MOCKS): aibridged/client.go aibridged/pool.go
-	go generate ./aibridged/aibridgedmock/
+$(AIBRIDGED_MOCKS): x/aibridged/client.go x/aibridged/pool.go
+	go generate ./x/aibridged/aibridgedmock/
 	touch "$@"
 
 agent/agentcontainers/dcspec/dcspec_gen.go: \
