@@ -13,10 +13,11 @@ func (r *RootCmd) tasksCommand() *serpent.Command {
 			return i.Command.HelpHandler(i)
 		},
 		Children: []*serpent.Command{
-			r.taskList(),
 			r.taskCreate(),
-			r.taskStatus(),
 			r.taskDelete(),
+			r.taskList(),
+			r.taskLogs(),
+			r.taskStatus(),
 		},
 	}
 	return cmd

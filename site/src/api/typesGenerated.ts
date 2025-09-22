@@ -2884,6 +2884,17 @@ export interface Task {
 }
 
 // From codersdk/aitasks.go
+export interface TaskMessage {
+	readonly id: number;
+	readonly content: string;
+	readonly type: TaskMessageType;
+	readonly time: string;
+}
+
+// From codersdk/aitasks.go
+export type TaskMessageType = string;
+
+// From codersdk/aitasks.go
 export type TaskState = "completed" | "failed" | "idle" | "working";
 
 // From codersdk/aitasks.go

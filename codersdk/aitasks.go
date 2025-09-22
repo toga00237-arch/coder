@@ -206,3 +206,36 @@ func (c *ExperimentalClient) DeleteTask(ctx context.Context, user string, id uui
 	}
 	return nil
 }
+
+type TaskMessageType string
+
+var (
+	TaskMessageTypeInput  TaskMessageType = "input"
+	TaskMessageTypeOutput TaskMessageType = "output"
+)
+
+type TaskMessage struct {
+	ID      int             `json:"id"`
+	Content string          `json:"content"`
+	Type    TaskMessageType `json:"type"`
+	Time    time.Time       `json:"time" format:"date-time"`
+}
+
+// TaskLogs lists all logs for a task.
+//
+// Experimental: This method is experimental and may change in the future
+func (c *ExperimentalClient) TaskLogs(ctx context.Context, user string, id uuid.UUID) ([]TaskMessage, error) {
+	res, err := c.Request(ctx, http.MethodGet, fmt.Sprintf("/api/experimental/tasks/%s/%s/logs", user, id.String()), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return nil, ReadBodyAsError(res)
+	}
+	var logs []TaskMessage
+	if err := json.NewDecoder(res.Body).Decode(&logs); err != nil {
+		return nil, err
+	}
+	return logs, nil
+}
