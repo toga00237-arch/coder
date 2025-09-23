@@ -206,3 +206,20 @@ func (c *ExperimentalClient) DeleteTask(ctx context.Context, user string, id uui
 	}
 	return nil
 }
+
+type TaskSendRequest struct {
+	Input string `json:"input"`
+}
+
+func (c *ExperimentalClient) TaskSend(ctx context.Context, user string, id uuid.UUID, input string) error {
+	req := &TaskSendRequest{Input: input}
+	res, err := c.Request(ctx, http.MethodPost, fmt.Sprintf("/api/experimental/tasks/%s/%s/send", user, id.String()), req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return ReadBodyAsError(res)
+	}
+	return nil
+}
