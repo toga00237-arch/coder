@@ -33,7 +33,7 @@ import (
 	"github.com/coder/coder/v2/codersdk"
 	"github.com/coder/coder/v2/codersdk/workspacesdk"
 	"github.com/coder/coder/v2/scaletest/agentconn"
-	"github.com/coder/coder/v2/scaletest/coderconnect"
+	"github.com/coder/coder/v2/scaletest/createusers"
 	"github.com/coder/coder/v2/scaletest/createworkspaces"
 	"github.com/coder/coder/v2/scaletest/dashboard"
 	"github.com/coder/coder/v2/scaletest/harness"
@@ -41,6 +41,7 @@ import (
 	"github.com/coder/coder/v2/scaletest/reconnectingpty"
 	"github.com/coder/coder/v2/scaletest/workspacebuild"
 	"github.com/coder/coder/v2/scaletest/workspacetraffic"
+	"github.com/coder/coder/v2/scaletest/workspaceupdates"
 	"github.com/coder/serpent"
 )
 
@@ -57,7 +58,7 @@ func (r *RootCmd) scaletestCmd() *serpent.Command {
 			r.scaletestCleanup(),
 			r.scaletestDashboard(),
 			r.scaletestCreateWorkspaces(),
-			r.scaletestCoderConnect(),
+			r.scaletestWorkspaceUpdates(),
 			r.scaletestWorkspaceTraffic(),
 		},
 	}
@@ -856,7 +857,7 @@ func (r *RootCmd) scaletestCreateWorkspaces() *serpent.Command {
 	return cmd
 }
 
-func (r *RootCmd) scaletestCoderConnect() *serpent.Command {
+func (r *RootCmd) scaletestWorkspaceUpdates() *serpent.Command {
 	var (
 		workspaceCount          int64
 		powerUserWorkspaces     int64
@@ -877,8 +878,8 @@ func (r *RootCmd) scaletestCoderConnect() *serpent.Command {
 	)
 
 	cmd := &serpent.Command{
-		Use:   "coder-connect",
-		Short: "Simulate the load of Coder Desktop clients",
+		Use:   "workspace-updates",
+		Short: "Simulate the load of Coder Desktop clients receiving workspace updates",
 		Handler: func(inv *serpent.Invocation) error {
 			ctx := inv.Context()
 			client, err := r.TryInitClient(inv)
@@ -963,7 +964,7 @@ func (r *RootCmd) scaletestCoderConnect() *serpent.Command {
 			tracer := tracerProvider.Tracer(scaletestTracerName)
 
 			reg := prometheus.NewRegistry()
-			metrics := coderconnect.NewMetrics(reg)
+			metrics := workspaceupdates.NewMetrics(reg)
 
 			logger := inv.Logger
 			prometheusSrvClose := ServeHandler(ctx, logger, promhttp.HandlerFor(reg, promhttp.HandlerOpts{}), prometheusFlags.Address, "prometheus")
@@ -981,13 +982,14 @@ func (r *RootCmd) scaletestCoderConnect() *serpent.Command {
 
 			_, _ = fmt.Fprintln(inv.Stderr, "Creating users...")
 
-			dialBarrier := harness.NewBarrier(int(powerUserCount + regularUserCount))
+			dialBarrier := new(sync.WaitGroup)
+			dialBarrier.Add(int(powerUserCount + regularUserCount))
 
-			configs := make([]coderconnect.Config, 0, powerUserCount+regularUserCount)
+			configs := make([]workspaceupdates.Config, 0, powerUserCount+regularUserCount)
 
 			for i := int64(0); i < powerUserCount; i++ {
-				config := coderconnect.Config{
-					User: coderconnect.UserConfig{
+				config := workspaceupdates.Config{
+					User: createusers.Config{
 						OrganizationID: me.OrganizationIDs[0],
 					},
 					Workspace: workspacebuild.Config{
@@ -1002,7 +1004,6 @@ func (r *RootCmd) scaletestCoderConnect() *serpent.Command {
 					WorkspaceUpdatesTimeout: workspaceUpdatesTimeout,
 					DialTimeout:             dialTimeout,
 					Metrics:                 metrics,
-					NoCleanup:               noCleanup,
 					DialBarrier:             dialBarrier,
 				}
 				if err := config.Validate(); err != nil {
@@ -1013,8 +1014,8 @@ func (r *RootCmd) scaletestCoderConnect() *serpent.Command {
 
 			for i := int64(0); i < regularUserCount; i++ {
 				workspaceCount := 1
-				config := coderconnect.Config{
-					User: coderconnect.UserConfig{
+				config := workspaceupdates.Config{
+					User: createusers.Config{
 						OrganizationID: me.OrganizationIDs[0],
 					},
 					Workspace: workspacebuild.Config{
@@ -1029,7 +1030,6 @@ func (r *RootCmd) scaletestCoderConnect() *serpent.Command {
 					WorkspaceUpdatesTimeout: workspaceUpdatesTimeout,
 					DialTimeout:             dialTimeout,
 					Metrics:                 metrics,
-					NoCleanup:               noCleanup,
 					DialBarrier:             dialBarrier,
 				}
 				if err := config.Validate(); err != nil {
@@ -1040,7 +1040,7 @@ func (r *RootCmd) scaletestCoderConnect() *serpent.Command {
 
 			th := harness.NewTestHarness(strategy.toStrategy(), cleanupStrategy.toStrategy())
 			for i, config := range configs {
-				name := fmt.Sprintf("coderconnect-%dw", config.WorkspaceCount)
+				name := fmt.Sprintf("workspaceupdates-%dw", config.WorkspaceCount)
 				id := strconv.Itoa(i)
 				username, email, err := loadtestutil.GenerateUserIdentifier(id)
 				if err != nil {
@@ -1049,7 +1049,7 @@ func (r *RootCmd) scaletestCoderConnect() *serpent.Command {
 				config.User.Username = username
 				config.User.Email = email
 
-				var runner harness.Runnable = coderconnect.NewRunner(client, config)
+				var runner harness.Runnable = workspaceupdates.NewRunner(client, config)
 				if tracingEnabled {
 					runner = &runnableTraceWrapper{
 						tracer:   tracer,
@@ -1061,7 +1061,7 @@ func (r *RootCmd) scaletestCoderConnect() *serpent.Command {
 				th.AddRun(name, id, runner)
 			}
 
-			_, _ = fmt.Fprintln(inv.Stderr, "Running Coder Connect scaletest...")
+			_, _ = fmt.Fprintln(inv.Stderr, "Running workspace updates scaletest...")
 			testCtx, testCancel := strategy.toContext(ctx)
 			defer testCancel()
 			err = th.Run(testCtx)
@@ -1082,12 +1082,14 @@ func (r *RootCmd) scaletestCoderConnect() *serpent.Command {
 				}
 			}
 
-			_, _ = fmt.Fprintln(inv.Stderr, "\nCleaning up...")
-			cleanupCtx, cleanupCancel := cleanupStrategy.toContext(ctx)
-			defer cleanupCancel()
-			err = th.Cleanup(cleanupCtx)
-			if err != nil {
-				return xerrors.Errorf("cleanup tests: %w", err)
+			if !noCleanup {
+				_, _ = fmt.Fprintln(inv.Stderr, "\nCleaning up...")
+				cleanupCtx, cleanupCancel := cleanupStrategy.toContext(ctx)
+				defer cleanupCancel()
+				err = th.Cleanup(cleanupCtx)
+				if err != nil {
+					return xerrors.Errorf("cleanup tests: %w", err)
+				}
 			}
 
 			if res.TotalFail > 0 {
@@ -1131,7 +1133,7 @@ func (r *RootCmd) scaletestCoderConnect() *serpent.Command {
 			Flag:        "dial-timeout",
 			Env:         "CODER_SCALETEST_DIAL_TIMEOUT",
 			Default:     "2m",
-			Description: "Timeout for dialing the Coder Connect endpoint.",
+			Description: "Timeout for dialing the tailnet endpoint.",
 			Value:       serpent.DurationOf(&dialTimeout),
 		},
 		{
