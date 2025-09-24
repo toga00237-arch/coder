@@ -2,6 +2,7 @@ package rbac
 
 import (
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -18,7 +19,7 @@ func TestExternalScopeNames(t *testing.T) {
 	sort.Strings(sorted)
 	require.Equal(t, sorted, names)
 
-	// Ensure each entry parses and expands to site-only
+	// Ensure each entry expands to site-only
 	for _, name := range names {
 		// Skip `all` and `application_connect` since they do not
 		// expand into a low level scope.
@@ -27,6 +28,17 @@ func TestExternalScopeNames(t *testing.T) {
 			continue
 		}
 
+		// Composite coder:* scopes expand to one or more site permissions.
+		if strings.HasPrefix(name, "coder:") {
+			s, err := ScopeName(name).Expand()
+			require.NoErrorf(t, err, "catalog entry should expand: %s", name)
+			require.NotEmpty(t, s.Site)
+			require.Empty(t, s.Org)
+			require.Empty(t, s.User)
+			continue
+		}
+
+		// Low-level scopes must parse to a single permission.
 		res, act, ok := parseLowLevelScope(ScopeName(name))
 		require.Truef(t, ok, "catalog entry should parse: %s", name)
 

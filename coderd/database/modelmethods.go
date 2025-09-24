@@ -203,6 +203,29 @@ func (s APIKeyScopes) Expand() (rbac.Scope, error) {
 		}
 	}
 
+	// De-duplicate permissions across Site/Org/User
+	dedup := func(in []rbac.Permission) []rbac.Permission {
+		if len(in) == 0 {
+			return in
+		}
+		seen := make(map[string]struct{}, len(in))
+		out := make([]rbac.Permission, 0, len(in))
+		for _, p := range in {
+			key := p.ResourceType + "\x00" + string(p.Action) + "\x00" + strconv.FormatBool(p.Negate)
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			out = append(out, p)
+		}
+		return out
+	}
+	merged.Site = dedup(merged.Site)
+	for orgID, perms := range merged.Org {
+		merged.Org[orgID] = dedup(perms)
+	}
+	merged.User = dedup(merged.User)
+
 	if allowAll || len(allowSet) == 0 {
 		merged.AllowIDList = []rbac.AllowListElement{rbac.AllowListAll()}
 	} else {
