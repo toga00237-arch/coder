@@ -18,7 +18,6 @@ import (
 
 	"cdr.dev/slog"
 
-	"github.com/coder/coder/v2/aibridged/proto"
 	"github.com/coder/coder/v2/coderd/database"
 	"github.com/coder/coder/v2/coderd/database/dbauthz"
 	"github.com/coder/coder/v2/coderd/database/dbtime"
@@ -26,6 +25,7 @@ import (
 	"github.com/coder/coder/v2/coderd/httpmw"
 	codermcp "github.com/coder/coder/v2/coderd/mcp"
 	"github.com/coder/coder/v2/codersdk"
+	"github.com/coder/coder/v2/x/aibridged/proto"
 )
 
 var (
