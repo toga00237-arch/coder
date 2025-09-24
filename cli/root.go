@@ -134,6 +134,7 @@ func (r *RootCmd) CoreSubcommands() []*serpent.Command {
 		r.vpnDaemon(),
 		r.vscodeSSH(),
 		workspaceAgent(),
+		r.aibridge(),
 	}
 }
 
