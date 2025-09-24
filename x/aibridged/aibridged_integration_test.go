@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/coder/aibridge"
-	"github.com/coder/coder/v2/aibridged"
 	"github.com/coder/coder/v2/coderd/coderdtest"
 	"github.com/coder/coder/v2/coderd/database"
 	"github.com/coder/coder/v2/coderd/database/dbauthz"
@@ -21,6 +20,7 @@ import (
 	"github.com/coder/coder/v2/coderd/externalauth"
 	"github.com/coder/coder/v2/codersdk"
 	"github.com/coder/coder/v2/testutil"
+	"github.com/coder/coder/v2/x/aibridged"
 )
 
 // TestIntegration is not an exhaustive test against the upstream AI providers' SDKs (see coder/aibridge for those).

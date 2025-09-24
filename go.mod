@@ -478,7 +478,7 @@ require (
 	github.com/anthropics/anthropic-sdk-go v1.12.0
 	github.com/brianvoe/gofakeit/v7 v7.7.1
 	github.com/coder/agentapi-sdk-go v0.0.0-20250505131810-560d1d88d225
-	github.com/coder/aibridge v0.0.0-20250924143139-6f2113f274a0 // TODO: replace with published tag.
+	github.com/coder/aibridge v0.0.0-20250924100303-b9f2461d757c // TODO: replace with published tag.
 	github.com/coder/aisdk-go v0.0.9
 	github.com/coder/preview v1.0.4
 	github.com/dgraph-io/ristretto/v2 v2.3.0
