@@ -71,23 +71,23 @@ func (r *Runner) Run(ctx context.Context, id string, logs io.Writer) error {
 	r.client.SetLogBodies(true)
 
 	r.createUserRunner = createusers.NewRunner(r.client, r.cfg.User)
-	newUser, err := r.createUserRunner.RunReturningUser(ctx, id, logs)
+	newUserAndToken, err := r.createUserRunner.RunReturningUser(ctx, id, logs)
 	if err != nil {
 		return xerrors.Errorf("create user: %w", err)
 	}
-	user := newUser.User
-	client := codersdk.New(r.client.URL,
-		codersdk.WithSessionToken(newUser.SessionToken),
+	newUser := newUserAndToken.User
+	newUserClient := codersdk.New(r.client.URL,
+		codersdk.WithSessionToken(newUserAndToken.SessionToken),
 		codersdk.WithLogger(logger),
 		codersdk.WithLogBodies())
 
-	logger.Info(ctx, fmt.Sprintf("user %q created", user.Username), slog.F("id", user.ID.String()))
+	logger.Info(ctx, fmt.Sprintf("user %q created", newUser.Username), slog.F("id", newUser.ID.String()))
 
 	dialCtx, cancel := context.WithTimeout(ctx, r.cfg.DialTimeout)
 	defer cancel()
 
 	logger.Info(ctx, "connecting to workspace updates stream")
-	clients, err := r.dialTailnet(dialCtx, client, user, logger)
+	clients, err := r.dialTailnet(dialCtx, newUserClient, newUser, logger)
 	if err != nil {
 		return xerrors.Errorf("tailnet dial failed: %w", err)
 	}
@@ -99,7 +99,7 @@ func (r *Runner) Run(ctx context.Context, id string, logs io.Writer) error {
 
 	completionCh := make(chan error, 1)
 	go func() {
-		completionCh <- r.watchWorkspaceUpdates(watchCtx, clients, user, logger)
+		completionCh <- r.watchWorkspaceUpdates(watchCtx, clients, newUser, logger)
 	}()
 
 	reachedBarrier = true
@@ -114,10 +114,10 @@ func (r *Runner) Run(ctx context.Context, id string, logs io.Writer) error {
 		}
 		workspaceBuildConfig := r.cfg.Workspace
 		workspaceBuildConfig.OrganizationID = r.cfg.User.OrganizationID
-		workspaceBuildConfig.UserID = user.ID.String()
+		workspaceBuildConfig.UserID = newUser.ID.String()
 		workspaceBuildConfig.Request.Name = workspaceName
 
-		runner := workspacebuild.NewRunner(client, workspaceBuildConfig)
+		runner := workspacebuild.NewRunner(newUserClient, workspaceBuildConfig)
 		r.workspacebuildRunners = append(r.workspacebuildRunners, runner)
 
 		logger.Info(ctx, fmt.Sprintf("creating workspace %d/%d", i+1, r.cfg.WorkspaceCount))
